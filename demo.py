@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.6"
+__generated_with = "0.14.13"
 app = marimo.App()
 
 
@@ -113,6 +113,38 @@ def _(mo):
     If you are keen to understand how the buttons are mapped on your gamepad, you may enjoy exploring the demo that we have [here](https://koaning.github.io/mopad/).
     """
     )
+    return
+
+
+@app.cell
+def _():
+    import anywidget 
+    import traitlets 
+    from pathlib import Path 
+
+    class Counter(anywidget.AnyWidget):
+        _esm = Path("src/molabel/static/image-widget.js").read_text()
+        value = traitlets.Int(0).tag(sync=True)
+
+
+    Counter()
+    return
+
+
+@app.cell
+def _(mo):
+    from molabel import ImageLabel
+
+    img_w = mo.ui.anywidget(
+        ImageLabel(["https://picsum.photos/200/300"] * 10, classes=["foo", "bar"])
+    )
+    img_w
+    return (img_w,)
+
+
+@app.cell
+def _(img_w):
+    img_w.annotations
     return
 
 

@@ -1,4 +1,5 @@
 from .widget import SimpleLabel
+from .image import ImageLabel
 
-__version__ = "0.1.0"
-__all__ = ["SimpleLabel"]
+
+__all__ = ["SimpleLabel", "ImageLabel"]

@@ -14,3 +14,9 @@ docs:
 pypi: clean
 	uv build
 	uv publish
+
+img-build:
+	cd js && npm run build
+
+img-dev:
+	cd js && npm run dev
