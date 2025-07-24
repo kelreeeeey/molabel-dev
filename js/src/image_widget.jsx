@@ -195,8 +195,22 @@ const DrawingArea = ({
   const [drawing, setDrawing] = useState(null);
   const containerRef = useRef(null);
   const hasDragged = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    setIsLoading(true);
+  }, [imageSrc]);
+
+  function handleImageLoad() {
+    setIsLoading(false);
+  }
 
   function handleMouseDown(e) {
+    // If the click is on the drawing area itself (not on an annotation), deselect any selected shape.
+    if (e.target === containerRef.current || e.target.tagName === 'svg' || e.target.tagName === 'IMG') {
+      setSelectedShape(null);
+    }
+
     if (tool === "box") {
       hasDragged.current = false;
       const { x, y } = getCoordinates(e);
@@ -261,60 +275,65 @@ const DrawingArea = ({
   }
 
   return (
-    <div
-      ref={containerRef}
-      style={{ position: "relative", display: "inline-block" }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    >
-      <img src={imageSrc} style={{ display: "block" }} />
-      <svg
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-        }}
+    <div className="imagewidget-drawing-area">
+      <div
+        ref={containerRef}
+        style={{ position: "relative", display: "inline-block" }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
       >
-        {annotations.map((anno) => {
-          if (anno.type === "box") {
-            return (
-              <Box
-                key={anno.id}
-                annotation={anno}
-                isSelected={selectedShape === anno.id}
-                onSelect={setSelectedShape}
-                onUpdate={handleUpdateAnnotation}
+        {isLoading && <div style={{ padding: '2rem', color: '#888' }}>Loading image...</div>}
+        <img src={imageSrc} onLoad={handleImageLoad} style={{ display: isLoading ? "none" : "block" }} />
+        {!isLoading && (
+          <svg
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            {annotations.map((anno) => {
+              if (anno.type === "box") {
+                return (
+                  <Box
+                    key={anno.id}
+                    annotation={anno}
+                    isSelected={selectedShape === anno.id}
+                    onSelect={setSelectedShape}
+                    onUpdate={handleUpdateAnnotation}
+                  />
+                );
+              }
+              if (anno.type === "point") {
+                return (
+                  <Point
+                    key={anno.id}
+                    annotation={anno}
+                    isSelected={selectedShape === anno.id}
+                    onSelect={setSelectedShape}
+                    onUpdate={handleUpdateAnnotation}
+                  />
+                );
+              }
+              return null;
+            })}
+            {drawing && tool === "box" && (
+              <rect
+                x={Math.min(drawing.startX, drawing.endX)}
+                y={Math.min(drawing.startY, drawing.endY)}
+                width={Math.abs(drawing.startX - drawing.endX)}
+                height={Math.abs(drawing.startY - drawing.endY)}
+                stroke="red"
+                fill="transparent"
+                strokeWidth="2"
               />
-            );
-          }
-          if (anno.type === "point") {
-            return (
-              <Point
-                key={anno.id}
-                annotation={anno}
-                isSelected={selectedShape === anno.id}
-                onSelect={setSelectedShape}
-                onUpdate={handleUpdateAnnotation}
-              />
-            );
-          }
-          return null;
-        })}
-        {drawing && tool === "box" && (
-          <rect
-            x={Math.min(drawing.startX, drawing.endX)}
-            y={Math.min(drawing.startY, drawing.endY)}
-            width={Math.abs(drawing.startX - drawing.endX)}
-            height={Math.abs(drawing.startY - drawing.endY)}
-            stroke="red"
-            fill="transparent"
-            strokeWidth="2"
-          />
+            )}
+          </svg>
         )}
-      </svg>
+      </div>
     </div>
   );
 };
@@ -322,12 +341,6 @@ const DrawingArea = ({
 const Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClass, onDeleteSelected, selectedShape }) => {
   return (
     <div className="imagewidget-toolbar">
-      <button onClick={() => setTool("box")} disabled={tool === "box"}>
-        Draw Box
-      </button>
-      <button onClick={() => setTool("point")} disabled={tool === "point"}>
-        Draw Point
-      </button>
       {classes && classes.length > 0 && (
         <div className="imagewidget-classes">
           {classes.map((c) => (
@@ -341,9 +354,56 @@ const Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClas
           ))}
         </div>
       )}
-      <button onClick={onClear}>Clear All</button>
-      <button onClick={onDeleteSelected} disabled={!selectedShape}>
-        Delete Selected
+      <div className="imagewidget-tools">
+        <button onClick={() => setTool("box")} disabled={tool === "box"} title="Draw Box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+        </button>
+        <button onClick={() => setTool("point")} disabled={tool === "point"} title="Draw Point">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+        </button>
+        <div style={{ flex: 1 }} />
+        <button onClick={onClear} title="Clear All">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+        </button>
+        <button onClick={onDeleteSelected} disabled={!selectedShape} title="Delete Selected">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const Navigation = ({ currentIndex, setCurrentIndex, srcs, annotations }) => {
+  const currentSrc = srcs[currentIndex];
+  const imageName = currentSrc.split("/").pop();
+  const annotatedImagesCount = annotations.filter(a => a.elements && a.elements.length > 0).length;
+
+  return (
+    <div className="imagewidget-navigation">
+      <button
+        onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+        disabled={currentIndex === 0}
+        title="Previous"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div className="imagewidget-progress-details">
+        <span className="imagewidget-filename" title={imageName}>{imageName}</span>
+        <div className="imagewidget-progress-container">
+          <div className="imagewidget-progress-bar" style={{ width: `${(annotatedImagesCount / srcs.length) * 100}%` }} />
+        </div>
+        <span className="imagewidget-progress-text">
+          {currentIndex + 1} / {srcs.length}
+        </span>
+      </div>
+      <button
+        onClick={() =>
+          setCurrentIndex((i) => Math.min(srcs.length - 1, i + 1))
+        }
+        disabled={currentIndex === srcs.length - 1}
+        title="Next"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
       </button>
     </div>
   );
@@ -407,30 +467,6 @@ function ImageAnnotationWidget() {
         onDeleteSelected={handleDeleteSelected}
         selectedShape={selectedShape}
       />
-      <div className="imagewidget-navigation">
-        <button
-          onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-          disabled={currentIndex === 0}
-        >
-          Previous
-        </button>
-        <span>
-          Image {currentIndex + 1} of {srcs.length}
-        </span>
-        <button
-          onClick={() =>
-            setCurrentIndex((i) => Math.min(srcs.length - 1, i + 1))
-          }
-          disabled={currentIndex === srcs.length - 1}
-        >
-          Next
-        </button>
-        <div style={{ flex: 1, marginLeft: '1rem', marginRight: '1rem' }}>
-          <div style={{ width: '100%', backgroundColor: '#e0e0e0', borderRadius: '4px' }}>
-            <div style={{ width: `${(annotations.filter(a => a.elements.length > 0).length / srcs.length) * 100}%`, backgroundColor: '#4caf50', height: '8px', borderRadius: '4px' }} />
-          </div>
-        </div>
-      </div>
       <DrawingArea
         imageSrc={currentSrc}
         annotations={currentAnnotationData.elements}
@@ -439,6 +475,12 @@ function ImageAnnotationWidget() {
         selectedShape={selectedShape}
         setSelectedShape={setSelectedShape}
         currentClass={currentClass}
+      />
+      <Navigation
+        currentIndex={currentIndex}
+        setCurrentIndex={setCurrentIndex}
+        srcs={srcs}
+        annotations={annotations}
       />
     </div>
   );

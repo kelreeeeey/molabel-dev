@@ -23767,7 +23767,17 @@ var DrawingArea = ({
   const [drawing, setDrawing] = (0, import_react2.useState)(null);
   const containerRef = (0, import_react2.useRef)(null);
   const hasDragged = (0, import_react2.useRef)(false);
+  const [isLoading, setIsLoading] = (0, import_react2.useState)(true);
+  React2.useEffect(() => {
+    setIsLoading(true);
+  }, [imageSrc]);
+  function handleImageLoad() {
+    setIsLoading(false);
+  }
   function handleMouseDown(e) {
+    if (e.target === containerRef.current || e.target.tagName === "svg" || e.target.tagName === "IMG") {
+      setSelectedShape(null);
+    }
     if (tool === "box") {
       hasDragged.current = false;
       const { x, y } = getCoordinates(e);
@@ -23826,7 +23836,7 @@ var DrawingArea = ({
     const newAnnotations = annotations.filter((anno) => anno.id !== id);
     onAnnotationChange(newAnnotations);
   }
-  return /* @__PURE__ */ React2.createElement(
+  return /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-drawing-area" }, /* @__PURE__ */ React2.createElement(
     "div",
     {
       ref: containerRef,
@@ -23835,8 +23845,9 @@ var DrawingArea = ({
       onMouseMove: handleMouseMove,
       onMouseUp: handleMouseUp
     },
-    /* @__PURE__ */ React2.createElement("img", { src: imageSrc, style: { display: "block" } }),
-    /* @__PURE__ */ React2.createElement(
+    isLoading && /* @__PURE__ */ React2.createElement("div", { style: { padding: "2rem", color: "#888" } }, "Loading image..."),
+    /* @__PURE__ */ React2.createElement("img", { src: imageSrc, onLoad: handleImageLoad, style: { display: isLoading ? "none" : "block" } }),
+    !isLoading && /* @__PURE__ */ React2.createElement(
       "svg",
       {
         style: {
@@ -23887,10 +23898,10 @@ var DrawingArea = ({
         }
       )
     )
-  );
+  ));
 };
 var Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClass, onDeleteSelected, selectedShape }) => {
-  return /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-toolbar" }, /* @__PURE__ */ React2.createElement("button", { onClick: () => setTool("box"), disabled: tool === "box" }, "Draw Box"), /* @__PURE__ */ React2.createElement("button", { onClick: () => setTool("point"), disabled: tool === "point" }, "Draw Point"), classes && classes.length > 0 && /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-classes" }, classes.map((c) => /* @__PURE__ */ React2.createElement(
+  return /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-toolbar" }, classes && classes.length > 0 && /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-classes" }, classes.map((c) => /* @__PURE__ */ React2.createElement(
     "button",
     {
       key: c,
@@ -23898,7 +23909,29 @@ var Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClass,
       onClick: () => setCurrentClass(c)
     },
     c
-  ))), /* @__PURE__ */ React2.createElement("button", { onClick: onClear }, "Clear All"), /* @__PURE__ */ React2.createElement("button", { onClick: onDeleteSelected, disabled: !selectedShape }, "Delete Selected"));
+  ))), /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-tools" }, /* @__PURE__ */ React2.createElement("button", { onClick: () => setTool("box"), disabled: tool === "box", title: "Draw Box" }, /* @__PURE__ */ React2.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React2.createElement("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2", ry: "2" }))), /* @__PURE__ */ React2.createElement("button", { onClick: () => setTool("point"), disabled: tool === "point", title: "Draw Point" }, /* @__PURE__ */ React2.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React2.createElement("circle", { cx: "12", cy: "12", r: "10" }))), /* @__PURE__ */ React2.createElement("div", { style: { flex: 1 } }), /* @__PURE__ */ React2.createElement("button", { onClick: onClear, title: "Clear All" }, /* @__PURE__ */ React2.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React2.createElement("polyline", { points: "23 4 23 10 17 10" }), /* @__PURE__ */ React2.createElement("path", { d: "M20.49 15a9 9 0 1 1-2.12-9.36L23 10" }))), /* @__PURE__ */ React2.createElement("button", { onClick: onDeleteSelected, disabled: !selectedShape, title: "Delete Selected" }, /* @__PURE__ */ React2.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React2.createElement("polyline", { points: "3 6 5 6 21 6" }), /* @__PURE__ */ React2.createElement("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }), /* @__PURE__ */ React2.createElement("line", { x1: "10", y1: "11", x2: "10", y2: "17" }), /* @__PURE__ */ React2.createElement("line", { x1: "14", y1: "11", x2: "14", y2: "17" })))));
+};
+var Navigation = ({ currentIndex, setCurrentIndex, srcs, annotations }) => {
+  const currentSrc = srcs[currentIndex];
+  const imageName = currentSrc.split("/").pop();
+  const annotatedImagesCount = annotations.filter((a) => a.elements && a.elements.length > 0).length;
+  return /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-navigation" }, /* @__PURE__ */ React2.createElement(
+    "button",
+    {
+      onClick: () => setCurrentIndex((i) => Math.max(0, i - 1)),
+      disabled: currentIndex === 0,
+      title: "Previous"
+    },
+    /* @__PURE__ */ React2.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React2.createElement("path", { d: "m15 18-6-6 6-6" }))
+  ), /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-progress-details" }, /* @__PURE__ */ React2.createElement("span", { className: "imagewidget-filename", title: imageName }, imageName), /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-progress-container" }, /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-progress-bar", style: { width: `${annotatedImagesCount / srcs.length * 100}%` } })), /* @__PURE__ */ React2.createElement("span", { className: "imagewidget-progress-text" }, currentIndex + 1, " / ", srcs.length)), /* @__PURE__ */ React2.createElement(
+    "button",
+    {
+      onClick: () => setCurrentIndex((i) => Math.min(srcs.length - 1, i + 1)),
+      disabled: currentIndex === srcs.length - 1,
+      title: "Next"
+    },
+    /* @__PURE__ */ React2.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React2.createElement("path", { d: "m9 18 6-6-6-6" }))
+  ));
 };
 function ImageAnnotationWidget() {
   const [srcs] = useModelState("srcs");
@@ -23952,21 +23985,7 @@ function ImageAnnotationWidget() {
       onDeleteSelected: handleDeleteSelected,
       selectedShape
     }
-  ), /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-navigation" }, /* @__PURE__ */ React2.createElement(
-    "button",
-    {
-      onClick: () => setCurrentIndex((i) => Math.max(0, i - 1)),
-      disabled: currentIndex === 0
-    },
-    "Previous"
-  ), /* @__PURE__ */ React2.createElement("span", null, "Image ", currentIndex + 1, " of ", srcs.length), /* @__PURE__ */ React2.createElement(
-    "button",
-    {
-      onClick: () => setCurrentIndex((i) => Math.min(srcs.length - 1, i + 1)),
-      disabled: currentIndex === srcs.length - 1
-    },
-    "Next"
-  ), /* @__PURE__ */ React2.createElement("div", { style: { flex: 1, marginLeft: "1rem", marginRight: "1rem" } }, /* @__PURE__ */ React2.createElement("div", { style: { width: "100%", backgroundColor: "#e0e0e0", borderRadius: "4px" } }, /* @__PURE__ */ React2.createElement("div", { style: { width: `${annotations.filter((a) => a.elements.length > 0).length / srcs.length * 100}%`, backgroundColor: "#4caf50", height: "8px", borderRadius: "4px" } })))), /* @__PURE__ */ React2.createElement(
+  ), /* @__PURE__ */ React2.createElement(
     DrawingArea,
     {
       imageSrc: currentSrc,
@@ -23976,6 +23995,14 @@ function ImageAnnotationWidget() {
       selectedShape,
       setSelectedShape,
       currentClass
+    }
+  ), /* @__PURE__ */ React2.createElement(
+    Navigation,
+    {
+      currentIndex,
+      setCurrentIndex,
+      srcs,
+      annotations
     }
   ));
 }
