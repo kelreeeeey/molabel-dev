@@ -23690,13 +23690,64 @@ var Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
     {
       ref: textRef,
       x: annotation.points[0].x + 2,
-      y: annotation.points[0].y + 12,
+      y: annotation.points[0].y + 14,
       fill: "white",
-      fontSize: "12",
+      fontSize: "14",
       style: { pointerEvents: "none" }
     },
     annotation.label
   )), isSelected && /* @__PURE__ */ React2.createElement(React2.Fragment, null, /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[0].x - 4, y: annotation.points[0].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "top-left"), style: { cursor: "nwse-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[1].x - 4, y: annotation.points[0].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "top-right"), style: { cursor: "nesw-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[0].x - 4, y: annotation.points[1].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "bottom-left"), style: { cursor: "nesw-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[1].x - 4, y: annotation.points[1].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "bottom-right"), style: { cursor: "nwse-resize" } })));
+};
+var Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
+  const textRef = (0, import_react2.useRef)(null);
+  const [textBBox, setTextBBox] = (0, import_react2.useState)({ width: 0, height: 0 });
+  React2.useEffect(() => {
+    if (textRef.current) {
+      const bbox = textRef.current.getBBox();
+      setTextBBox({ width: bbox.width, height: bbox.height });
+    }
+  }, [annotation.label]);
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    onSelect(annotation.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialPoint = annotation.points[0];
+    const handleMouseMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const newPoints = [{ x: initialPoint.x + dx, y: initialPoint.y + dy }];
+      onUpdate({ ...annotation, points: newPoints });
+    };
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+  const p = annotation.points[0];
+  return /* @__PURE__ */ React2.createElement("g", { onMouseDown: handleMouseDown, style: { cursor: "move" } }, /* @__PURE__ */ React2.createElement("circle", { cx: p.x, cy: p.y, r: isSelected ? 6 : 4, fill: "red" }), annotation.label && /* @__PURE__ */ React2.createElement("g", null, /* @__PURE__ */ React2.createElement(
+    "rect",
+    {
+      x: p.x + 8,
+      y: p.y - 8,
+      width: textBBox.width + 4,
+      height: textBBox.height,
+      fill: "red"
+    }
+  ), /* @__PURE__ */ React2.createElement(
+    "text",
+    {
+      ref: textRef,
+      x: p.x + 10,
+      y: p.y + 4,
+      fill: "white",
+      fontSize: "14",
+      style: { pointerEvents: "none" }
+    },
+    annotation.label
+  )));
 };
 var DrawingArea = ({
   imageSrc,
@@ -23711,11 +23762,21 @@ var DrawingArea = ({
   const containerRef = (0, import_react2.useRef)(null);
   const hasDragged = (0, import_react2.useRef)(false);
   function handleMouseDown(e) {
-    if (tool !== "box")
-      return;
-    hasDragged.current = false;
-    const { x, y } = getCoordinates(e);
-    setDrawing({ startX: x, startY: y, endX: x, endY: y });
+    if (tool === "box") {
+      hasDragged.current = false;
+      const { x, y } = getCoordinates(e);
+      setDrawing({ startX: x, startY: y, endX: x, endY: y });
+    } else if (tool === "point") {
+      const { x, y } = getCoordinates(e);
+      const newAnnotation = {
+        id: Date.now().toString(),
+        type: "point",
+        label: currentClass,
+        points: [{ x, y }]
+      };
+      onAnnotationChange([...annotations, newAnnotation]);
+      setSelectedShape(newAnnotation.id);
+    }
   }
   function handleMouseMove(e) {
     if (!drawing)
@@ -23725,7 +23786,7 @@ var DrawingArea = ({
     setDrawing({ ...drawing, endX: x, endY: y });
   }
   function handleMouseUp(e) {
-    if (!drawing || !hasDragged.current) {
+    if (tool !== "box" || !drawing || !hasDragged.current) {
       setDrawing(null);
       return;
     }
@@ -23780,17 +23841,34 @@ var DrawingArea = ({
           height: "100%"
         }
       },
-      annotations.map((anno) => /* @__PURE__ */ React2.createElement(
-        Box,
-        {
-          key: anno.id,
-          annotation: anno,
-          isSelected: selectedShape === anno.id,
-          onSelect: setSelectedShape,
-          onUpdate: handleUpdateAnnotation
+      annotations.map((anno) => {
+        if (anno.type === "box") {
+          return /* @__PURE__ */ React2.createElement(
+            Box,
+            {
+              key: anno.id,
+              annotation: anno,
+              isSelected: selectedShape === anno.id,
+              onSelect: setSelectedShape,
+              onUpdate: handleUpdateAnnotation
+            }
+          );
         }
-      )),
-      drawing && /* @__PURE__ */ React2.createElement(
+        if (anno.type === "point") {
+          return /* @__PURE__ */ React2.createElement(
+            Point,
+            {
+              key: anno.id,
+              annotation: anno,
+              isSelected: selectedShape === anno.id,
+              onSelect: setSelectedShape,
+              onUpdate: handleUpdateAnnotation
+            }
+          );
+        }
+        return null;
+      }),
+      drawing && tool === "box" && /* @__PURE__ */ React2.createElement(
         "rect",
         {
           x: Math.min(drawing.startX, drawing.endX),
@@ -23806,7 +23884,7 @@ var DrawingArea = ({
   );
 };
 var Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClass, onDeleteSelected, selectedShape }) => {
-  return /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-toolbar" }, /* @__PURE__ */ React2.createElement("button", { onClick: () => setTool("box"), disabled: tool === "box" }, "Draw Box"), classes && classes.length > 0 && /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-classes" }, classes.map((c) => /* @__PURE__ */ React2.createElement(
+  return /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-toolbar" }, /* @__PURE__ */ React2.createElement("button", { onClick: () => setTool("box"), disabled: tool === "box" }, "Draw Box"), /* @__PURE__ */ React2.createElement("button", { onClick: () => setTool("point"), disabled: tool === "point" }, "Draw Point"), classes && classes.length > 0 && /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-classes" }, classes.map((c) => /* @__PURE__ */ React2.createElement(
     "button",
     {
       key: c,

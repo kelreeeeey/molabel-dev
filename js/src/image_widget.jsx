@@ -94,9 +94,9 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
           <text
             ref={textRef}
             x={annotation.points[0].x + 2}
-            y={annotation.points[0].y + 12}
+            y={annotation.points[0].y + 14}
             fill="white"
-            fontSize="12"
+            fontSize="14"
             style={{ pointerEvents: "none" }}
           >
             {annotation.label}
@@ -110,6 +110,70 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
           <rect x={annotation.points[0].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "bottom-left")} style={{ cursor: "nesw-resize" }} />
           <rect x={annotation.points[1].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "bottom-right")} style={{ cursor: "nwse-resize" }} />
         </>
+      )}
+    </g>
+  );
+};
+
+const Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
+  const textRef = useRef(null);
+  const [textBBox, setTextBBox] = useState({ width: 0, height: 0 });
+
+  React.useEffect(() => {
+    if (textRef.current) {
+      const bbox = textRef.current.getBBox();
+      setTextBBox({ width: bbox.width, height: bbox.height });
+    }
+  }, [annotation.label]);
+
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    onSelect(annotation.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialPoint = annotation.points[0];
+
+    const handleMouseMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const newPoints = [{ x: initialPoint.x + dx, y: initialPoint.y + dy }];
+      onUpdate({ ...annotation, points: newPoints });
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const p = annotation.points[0];
+
+  return (
+    <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
+      <circle cx={p.x} cy={p.y} r={isSelected ? 6 : 4} fill="red" />
+      {annotation.label && (
+        <g>
+          <rect
+            x={p.x + 8}
+            y={p.y - 8}
+            width={textBBox.width + 4}
+            height={textBBox.height}
+            fill="red"
+          />
+          <text
+            ref={textRef}
+            x={p.x + 10}
+            y={p.y + 4}
+            fill="white"
+            fontSize="14"
+            style={{ pointerEvents: "none" }}
+          >
+            {annotation.label}
+          </text>
+        </g>
       )}
     </g>
   );
@@ -129,10 +193,21 @@ const DrawingArea = ({
   const hasDragged = useRef(false);
 
   function handleMouseDown(e) {
-    if (tool !== "box") return;
-    hasDragged.current = false;
-    const { x, y } = getCoordinates(e);
-    setDrawing({ startX: x, startY: y, endX: x, endY: y });
+    if (tool === "box") {
+      hasDragged.current = false;
+      const { x, y } = getCoordinates(e);
+      setDrawing({ startX: x, startY: y, endX: x, endY: y });
+    } else if (tool === "point") {
+      const { x, y } = getCoordinates(e);
+      const newAnnotation = {
+        id: Date.now().toString(),
+        type: "point",
+        label: currentClass,
+        points: [{ x, y }],
+      };
+      onAnnotationChange([...annotations, newAnnotation]);
+      setSelectedShape(newAnnotation.id);
+    }
   }
 
   function handleMouseMove(e) {
@@ -143,7 +218,7 @@ const DrawingArea = ({
   }
 
   function handleMouseUp(e) {
-    if (!drawing || !hasDragged.current) {
+    if (tool !== "box" || !drawing || !hasDragged.current) {
       setDrawing(null);
       return;
     }
@@ -199,16 +274,32 @@ const DrawingArea = ({
           height: "100%",
         }}
       >
-        {annotations.map((anno) => (
-          <Box
-            key={anno.id}
-            annotation={anno}
-            isSelected={selectedShape === anno.id}
-            onSelect={setSelectedShape}
-            onUpdate={handleUpdateAnnotation}
-          />
-        ))}
-        {drawing && (
+        {annotations.map((anno) => {
+          if (anno.type === "box") {
+            return (
+              <Box
+                key={anno.id}
+                annotation={anno}
+                isSelected={selectedShape === anno.id}
+                onSelect={setSelectedShape}
+                onUpdate={handleUpdateAnnotation}
+              />
+            );
+          }
+          if (anno.type === "point") {
+            return (
+              <Point
+                key={anno.id}
+                annotation={anno}
+                isSelected={selectedShape === anno.id}
+                onSelect={setSelectedShape}
+                onUpdate={handleUpdateAnnotation}
+              />
+            );
+          }
+          return null;
+        })}
+        {drawing && tool === "box" && (
           <rect
             x={Math.min(drawing.startX, drawing.endX)}
             y={Math.min(drawing.startY, drawing.endY)}
@@ -229,6 +320,9 @@ const Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClas
     <div className="imagewidget-toolbar">
       <button onClick={() => setTool("box")} disabled={tool === "box"}>
         Draw Box
+      </button>
+      <button onClick={() => setTool("point")} disabled={tool === "point"}>
+        Draw Point
       </button>
       {classes && classes.length > 0 && (
         <div className="imagewidget-classes">
