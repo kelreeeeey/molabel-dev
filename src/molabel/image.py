@@ -25,11 +25,19 @@ class ImageLabel(anywidget.AnyWidget):
     srcs = traitlets.List([]).tag(sync=True)
     annotations = traitlets.List([]).tag(sync=True)
     classes = traitlets.List([]).tag(sync=True)
+    colors = traitlets.Dict({}).tag(sync=True)
 
-    def __init__(self, paths=None, classes=None, **kwargs):
+    def __init__(self, paths=None, classes=None, colors=None, **kwargs):
         super().__init__(**kwargs)
         if paths:
             self.srcs = [to_src(p) for p in paths]
             self.annotations = [{"src": src, "elements": []} for src in self.srcs]
         if classes:
             self.classes = classes
+        if colors:
+            if isinstance(colors, list):
+                if len(colors) != len(self.classes):
+                    raise ValueError("The length of `colors` must match the length of `classes`.")
+                self.colors = dict(zip(self.classes, colors))
+            else:
+                self.colors = colors

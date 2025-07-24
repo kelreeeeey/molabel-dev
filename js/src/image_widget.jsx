@@ -2,9 +2,20 @@ import * as React from "react";
 import { createRender, useModelState } from "@anywidget/react";
 import { useState, useRef } from "react";
 
+const DEFAULT_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+];
+
 const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
   const textRef = useRef(null);
   const [textBBox, setTextBBox] = useState({ width: 0, height: 0 });
+  const color = annotation.color || "red";
 
   React.useEffect(() => {
     if (textRef.current) {
@@ -79,10 +90,10 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
   return (
     <g style={{ userSelect: 'none' }}>
       <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
-        <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p1.y} stroke="red" strokeWidth="3" />
-        <line x1={p2.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="red" strokeWidth="3" />
-        <line x1={p2.x} y1={p2.y} x2={p1.x} y2={p2.y} stroke="red" strokeWidth="3" />
-        <line x1={p1.x} y1={p2.y} x2={p1.x} y2={p1.y} stroke="red" strokeWidth="3" />
+        <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p1.y} stroke={color} strokeWidth="3" />
+        <line x1={p2.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke={color} strokeWidth="3" />
+        <line x1={p2.x} y1={p2.y} x2={p1.x} y2={p2.y} stroke={color} strokeWidth="3" />
+        <line x1={p1.x} y1={p2.y} x2={p1.x} y2={p1.y} stroke={color} strokeWidth="3" />
       </g>
       {annotation.label && (
         <g onMouseDown={(e) => { e.stopPropagation(); onSelect(annotation.id); }}>
@@ -91,7 +102,7 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
             y={annotation.points[0].y}
             width={textBBox.width + 4}
             height={textBBox.height}
-            fill="red"
+            fill={color}
           />
           <text
             ref={textRef}
@@ -107,10 +118,10 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
       )}
       {isSelected && (
         <g>
-          <rect x={annotation.points[0].x - 4} y={annotation.points[0].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "top-left")} style={{ cursor: "nwse-resize" }} />
-          <rect x={annotation.points[1].x - 4} y={annotation.points[0].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "top-right")} style={{ cursor: "nesw-resize" }} />
-          <rect x={annotation.points[0].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "bottom-left")} style={{ cursor: "nesw-resize" }} />
-          <rect x={annotation.points[1].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "bottom-right")} style={{ cursor: "nwse-resize" }} />
+          <rect x={annotation.points[0].x - 4} y={annotation.points[0].y - 4} width="8" height="8" fill={color} onMouseDown={(e) => handleResizeMouseDown(e, "top-left")} style={{ cursor: "nwse-resize" }} />
+          <rect x={annotation.points[1].x - 4} y={annotation.points[0].y - 4} width="8" height="8" fill={color} onMouseDown={(e) => handleResizeMouseDown(e, "top-right")} style={{ cursor: "nesw-resize" }} />
+          <rect x={annotation.points[0].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill={color} onMouseDown={(e) => handleResizeMouseDown(e, "bottom-left")} style={{ cursor: "nesw-resize" }} />
+          <rect x={annotation.points[1].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill={color} onMouseDown={(e) => handleResizeMouseDown(e, "bottom-right")} style={{ cursor: "nwse-resize" }} />
         </g>
       )}
     </g>
@@ -120,6 +131,7 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
 const Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
   const textRef = useRef(null);
   const [textBBox, setTextBBox] = useState({ width: 0, height: 0 });
+  const color = annotation.color || "red";
 
   React.useEffect(() => {
     if (textRef.current) {
@@ -156,7 +168,7 @@ const Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
   return (
     <g style={{ userSelect: 'none' }}>
       <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
-        <circle cx={p.x} cy={p.y} r={isSelected ? 6 : 4} fill="red" />
+        <circle cx={p.x} cy={p.y} r={isSelected ? 6 : 4} fill={color} />
       </g>
       {annotation.label && (
         <g onMouseDown={(e) => { e.stopPropagation(); onSelect(annotation.id); }}>
@@ -165,7 +177,7 @@ const Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
             y={p.y - 8}
             width={textBBox.width + 4}
             height={textBBox.height}
-            fill="red"
+            fill={color}
           />
           <text
             ref={textRef}
@@ -191,6 +203,7 @@ const DrawingArea = ({
   selectedShape,
   setSelectedShape,
   currentClass,
+  drawingColor,
 }) => {
   const [drawing, setDrawing] = useState(null);
   const containerRef = useRef(null);
@@ -206,7 +219,6 @@ const DrawingArea = ({
   }
 
   function handleMouseDown(e) {
-    // If the click is on the drawing area itself (not on an annotation), deselect any selected shape.
     if (e.target === containerRef.current || e.target.tagName === 'svg' || e.target.tagName === 'IMG') {
       setSelectedShape(null);
     }
@@ -269,11 +281,6 @@ const DrawingArea = ({
     onAnnotationChange(newAnnotations);
   }
 
-  function handleDeleteAnnotation(id) {
-    const newAnnotations = annotations.filter((anno) => anno.id !== id);
-    onAnnotationChange(newAnnotations);
-  }
-
   return (
     <div className="imagewidget-drawing-area">
       <div
@@ -326,7 +333,7 @@ const DrawingArea = ({
                 y={Math.min(drawing.startY, drawing.endY)}
                 width={Math.abs(drawing.startX - drawing.endX)}
                 height={Math.abs(drawing.startY - drawing.endY)}
-                stroke="red"
+                stroke={drawingColor}
                 fill="transparent"
                 strokeWidth="2"
               />
@@ -413,6 +420,7 @@ function ImageAnnotationWidget() {
   const [srcs] = useModelState("srcs");
   const [annotations, setAnnotations] = useModelState("annotations");
   const [classes] = useModelState("classes");
+  const [colors] = useModelState("colors");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [tool, setTool] = useState("box");
   const [selectedShape, setSelectedShape] = useState(null);
@@ -426,6 +434,11 @@ function ImageAnnotationWidget() {
     }
   }, [classes]);
 
+  const labelColorMap = {};
+  if (colors && Object.keys(colors).length > 0) {
+    Object.assign(labelColorMap, colors);
+  }
+
   if (!srcs || srcs.length === 0) {
     return <div>Loading images...</div>;
   }
@@ -436,9 +449,22 @@ function ImageAnnotationWidget() {
   };
 
   function handleAnnotationChange(newElements) {
-    const newAnnotations = annotations.map((anno) =>
-      anno.src === currentSrc ? { ...anno, elements: newElements } : anno
-    );
+    const newAnnotations = annotations.map((anno) => {
+      if (anno.src === currentSrc) {
+        const updatedElements = newElements.map((el, index) => {
+          if (el.color) return el;
+          let color;
+          if (Object.keys(labelColorMap).length > 0) {
+            color = labelColorMap[el.label];
+          } else {
+            color = DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+          }
+          return { ...el, color: color || "red" };
+        });
+        return { ...anno, elements: updatedElements };
+      }
+      return anno;
+    });
     setAnnotations(newAnnotations);
   }
 
@@ -454,6 +480,10 @@ function ImageAnnotationWidget() {
     handleAnnotationChange(newElements);
     setSelectedShape(null);
   }
+
+  const drawingColor = Object.keys(labelColorMap).length > 0
+    ? labelColorMap[currentClass]
+    : DEFAULT_COLORS[currentAnnotationData.elements.length % DEFAULT_COLORS.length];
 
   return (
     <div className="imagewidget-container">
@@ -475,6 +505,7 @@ function ImageAnnotationWidget() {
         selectedShape={selectedShape}
         setSelectedShape={setSelectedShape}
         currentClass={currentClass}
+        drawingColor={drawingColor}
       />
       <Navigation
         currentIndex={currentIndex}

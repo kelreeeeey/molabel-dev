@@ -105,6 +105,11 @@
   border-color: #4a90e2;
 }
 
+.imagewidget-classes button.selected {
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  transform: translateY(1px);
+}
+
 .imagewidget-progress-details {
   flex-grow: 1;
   display: flex;
