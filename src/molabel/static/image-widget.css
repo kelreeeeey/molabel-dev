@@ -31,3 +31,13 @@
   gap: 8px;
   align-items: center;
 }
+
+.imagewidget-classes {
+  display: flex;
+  gap: 4px;
+}
+
+.imagewidget-classes button.selected {
+  background-color: #a0a0f0;
+  border-color: #a0a0f0;
+}
