@@ -136,7 +136,7 @@ def _(mo):
     from molabel import ImageLabel
 
     img_w = mo.ui.anywidget(
-        ImageLabel(["https://picsum.photos/200/300"] * 10, classes=["foo", "bar"])
+        ImageLabel([f"https://picsum.photos/500/50{i}" for i in range(9)] , classes=["foo", "bar"])
     )
     img_w
     return (img_w,)

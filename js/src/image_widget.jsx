@@ -77,13 +77,15 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
   const p2 = annotation.points[1];
 
   return (
-    <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
-      <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p1.y} stroke="red" strokeWidth="3" />
-      <line x1={p2.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="red" strokeWidth="3" />
-      <line x1={p2.x} y1={p2.y} x2={p1.x} y2={p2.y} stroke="red" strokeWidth="3" />
-      <line x1={p1.x} y1={p2.y} x2={p1.x} y2={p1.y} stroke="red" strokeWidth="3" />
+    <g style={{ userSelect: 'none' }}>
+      <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
+        <line x1={p1.x} y1={p1.y} x2={p2.x} y2={p1.y} stroke="red" strokeWidth="3" />
+        <line x1={p2.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="red" strokeWidth="3" />
+        <line x1={p2.x} y1={p2.y} x2={p1.x} y2={p2.y} stroke="red" strokeWidth="3" />
+        <line x1={p1.x} y1={p2.y} x2={p1.x} y2={p1.y} stroke="red" strokeWidth="3" />
+      </g>
       {annotation.label && (
-        <>
+        <g onMouseDown={(e) => { e.stopPropagation(); onSelect(annotation.id); }}>
           <rect
             x={annotation.points[0].x}
             y={annotation.points[0].y}
@@ -101,15 +103,15 @@ const Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
           >
             {annotation.label}
           </text>
-        </>
+        </g>
       )}
       {isSelected && (
-        <>
+        <g>
           <rect x={annotation.points[0].x - 4} y={annotation.points[0].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "top-left")} style={{ cursor: "nwse-resize" }} />
           <rect x={annotation.points[1].x - 4} y={annotation.points[0].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "top-right")} style={{ cursor: "nesw-resize" }} />
           <rect x={annotation.points[0].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "bottom-left")} style={{ cursor: "nesw-resize" }} />
           <rect x={annotation.points[1].x - 4} y={annotation.points[1].y - 4} width="8" height="8" fill="red" onMouseDown={(e) => handleResizeMouseDown(e, "bottom-right")} style={{ cursor: "nwse-resize" }} />
-        </>
+        </g>
       )}
     </g>
   );
@@ -152,10 +154,12 @@ const Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
   const p = annotation.points[0];
 
   return (
-    <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
-      <circle cx={p.x} cy={p.y} r={isSelected ? 6 : 4} fill="red" />
+    <g style={{ userSelect: 'none' }}>
+      <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
+        <circle cx={p.x} cy={p.y} r={isSelected ? 6 : 4} fill="red" />
+      </g>
       {annotation.label && (
-        <g>
+        <g onMouseDown={(e) => { e.stopPropagation(); onSelect(annotation.id); }}>
           <rect
             x={p.x + 8}
             y={p.y - 8}
@@ -391,8 +395,6 @@ function ImageAnnotationWidget() {
     setSelectedShape(null);
   }
 
-  const annotatedImages = annotations.filter(a => a.elements.length > 0).length;
-
   return (
     <div className="imagewidget-container">
       <Toolbar
@@ -425,7 +427,7 @@ function ImageAnnotationWidget() {
         </button>
         <div style={{ flex: 1, marginLeft: '1rem', marginRight: '1rem' }}>
           <div style={{ width: '100%', backgroundColor: '#e0e0e0', borderRadius: '4px' }}>
-            <div style={{ width: `${(annotatedImages / srcs.length) * 100}%`, backgroundColor: '#4caf50', height: '8px', borderRadius: '4px' }} />
+            <div style={{ width: `${(annotations.filter(a => a.elements.length > 0).length / srcs.length) * 100}%`, backgroundColor: '#4caf50', height: '8px', borderRadius: '4px' }} />
           </div>
         </div>
       </div>

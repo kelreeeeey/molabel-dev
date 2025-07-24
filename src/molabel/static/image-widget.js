@@ -2433,7 +2433,7 @@ var require_react_dom_development = __commonJS({
         var HostPortal = 4;
         var HostComponent = 5;
         var HostText = 6;
-        var Fragment2 = 7;
+        var Fragment = 7;
         var Mode = 8;
         var ContextConsumer = 9;
         var ContextProvider = 10;
@@ -3589,7 +3589,7 @@ var require_react_dom_development = __commonJS({
               return "DehydratedFragment";
             case ForwardRef:
               return getWrappedName$1(type, type.render, "ForwardRef");
-            case Fragment2:
+            case Fragment:
               return "Fragment";
             case HostComponent:
               return type;
@@ -11990,7 +11990,7 @@ var require_react_dom_development = __commonJS({
             }
           }
           function updateFragment2(returnFiber, current2, fragment, lanes, key) {
-            if (current2 === null || current2.tag !== Fragment2) {
+            if (current2 === null || current2.tag !== Fragment) {
               var created = createFiberFromFragment(fragment, returnFiber.mode, lanes, key);
               created.return = returnFiber;
               return created;
@@ -12393,7 +12393,7 @@ var require_react_dom_development = __commonJS({
               if (child.key === key) {
                 var elementType = element.type;
                 if (elementType === REACT_FRAGMENT_TYPE) {
-                  if (child.tag === Fragment2) {
+                  if (child.tag === Fragment) {
                     deleteRemainingChildren(returnFiber, child.sibling);
                     var existing = useFiber(child, element.props.children);
                     existing.return = returnFiber;
@@ -17870,7 +17870,7 @@ var require_react_dom_development = __commonJS({
               var _resolvedProps2 = workInProgress2.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
               return updateForwardRef(current2, workInProgress2, type, _resolvedProps2, renderLanes2);
             }
-            case Fragment2:
+            case Fragment:
               return updateFragment(current2, workInProgress2, renderLanes2);
             case Mode:
               return updateMode(current2, workInProgress2, renderLanes2);
@@ -18143,7 +18143,7 @@ var require_react_dom_development = __commonJS({
             case SimpleMemoComponent:
             case FunctionComponent:
             case ForwardRef:
-            case Fragment2:
+            case Fragment:
             case Mode:
             case Profiler:
             case ContextConsumer:
@@ -22402,7 +22402,7 @@ var require_react_dom_development = __commonJS({
           return fiber;
         }
         function createFiberFromFragment(elements, mode, lanes, key) {
-          var fiber = createFiber(Fragment2, elements, key, mode);
+          var fiber = createFiber(Fragment, elements, key, mode);
           fiber.lanes = lanes;
           return fiber;
         }
@@ -23676,7 +23676,10 @@ var Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
   };
   const p1 = annotation.points[0];
   const p2 = annotation.points[1];
-  return /* @__PURE__ */ React2.createElement("g", { onMouseDown: handleMouseDown, style: { cursor: "move" } }, /* @__PURE__ */ React2.createElement("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p1.y, stroke: "red", strokeWidth: "3" }), /* @__PURE__ */ React2.createElement("line", { x1: p2.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke: "red", strokeWidth: "3" }), /* @__PURE__ */ React2.createElement("line", { x1: p2.x, y1: p2.y, x2: p1.x, y2: p2.y, stroke: "red", strokeWidth: "3" }), /* @__PURE__ */ React2.createElement("line", { x1: p1.x, y1: p2.y, x2: p1.x, y2: p1.y, stroke: "red", strokeWidth: "3" }), annotation.label && /* @__PURE__ */ React2.createElement(React2.Fragment, null, /* @__PURE__ */ React2.createElement(
+  return /* @__PURE__ */ React2.createElement("g", { style: { userSelect: "none" } }, /* @__PURE__ */ React2.createElement("g", { onMouseDown: handleMouseDown, style: { cursor: "move" } }, /* @__PURE__ */ React2.createElement("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p1.y, stroke: "red", strokeWidth: "3" }), /* @__PURE__ */ React2.createElement("line", { x1: p2.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke: "red", strokeWidth: "3" }), /* @__PURE__ */ React2.createElement("line", { x1: p2.x, y1: p2.y, x2: p1.x, y2: p2.y, stroke: "red", strokeWidth: "3" }), /* @__PURE__ */ React2.createElement("line", { x1: p1.x, y1: p2.y, x2: p1.x, y2: p1.y, stroke: "red", strokeWidth: "3" })), annotation.label && /* @__PURE__ */ React2.createElement("g", { onMouseDown: (e) => {
+    e.stopPropagation();
+    onSelect(annotation.id);
+  } }, /* @__PURE__ */ React2.createElement(
     "rect",
     {
       x: annotation.points[0].x,
@@ -23696,7 +23699,7 @@ var Box = ({ annotation, isSelected, onSelect, onUpdate }) => {
       style: { pointerEvents: "none" }
     },
     annotation.label
-  )), isSelected && /* @__PURE__ */ React2.createElement(React2.Fragment, null, /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[0].x - 4, y: annotation.points[0].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "top-left"), style: { cursor: "nwse-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[1].x - 4, y: annotation.points[0].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "top-right"), style: { cursor: "nesw-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[0].x - 4, y: annotation.points[1].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "bottom-left"), style: { cursor: "nesw-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[1].x - 4, y: annotation.points[1].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "bottom-right"), style: { cursor: "nwse-resize" } })));
+  )), isSelected && /* @__PURE__ */ React2.createElement("g", null, /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[0].x - 4, y: annotation.points[0].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "top-left"), style: { cursor: "nwse-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[1].x - 4, y: annotation.points[0].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "top-right"), style: { cursor: "nesw-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[0].x - 4, y: annotation.points[1].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "bottom-left"), style: { cursor: "nesw-resize" } }), /* @__PURE__ */ React2.createElement("rect", { x: annotation.points[1].x - 4, y: annotation.points[1].y - 4, width: "8", height: "8", fill: "red", onMouseDown: (e) => handleResizeMouseDown(e, "bottom-right"), style: { cursor: "nwse-resize" } })));
 };
 var Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
   const textRef = (0, import_react2.useRef)(null);
@@ -23727,7 +23730,10 @@ var Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
     document.addEventListener("mouseup", handleMouseUp);
   };
   const p = annotation.points[0];
-  return /* @__PURE__ */ React2.createElement("g", { onMouseDown: handleMouseDown, style: { cursor: "move" } }, /* @__PURE__ */ React2.createElement("circle", { cx: p.x, cy: p.y, r: isSelected ? 6 : 4, fill: "red" }), annotation.label && /* @__PURE__ */ React2.createElement("g", null, /* @__PURE__ */ React2.createElement(
+  return /* @__PURE__ */ React2.createElement("g", { style: { userSelect: "none" } }, /* @__PURE__ */ React2.createElement("g", { onMouseDown: handleMouseDown, style: { cursor: "move" } }, /* @__PURE__ */ React2.createElement("circle", { cx: p.x, cy: p.y, r: isSelected ? 6 : 4, fill: "red" })), annotation.label && /* @__PURE__ */ React2.createElement("g", { onMouseDown: (e) => {
+    e.stopPropagation();
+    onSelect(annotation.id);
+  } }, /* @__PURE__ */ React2.createElement(
     "rect",
     {
       x: p.x + 8,
@@ -23934,7 +23940,6 @@ function ImageAnnotationWidget() {
     handleAnnotationChange(newElements);
     setSelectedShape(null);
   }
-  const annotatedImages = annotations.filter((a) => a.elements.length > 0).length;
   return /* @__PURE__ */ React2.createElement("div", { className: "imagewidget-container" }, /* @__PURE__ */ React2.createElement(
     Toolbar,
     {
@@ -23961,7 +23966,7 @@ function ImageAnnotationWidget() {
       disabled: currentIndex === srcs.length - 1
     },
     "Next"
-  ), /* @__PURE__ */ React2.createElement("div", { style: { flex: 1, marginLeft: "1rem", marginRight: "1rem" } }, /* @__PURE__ */ React2.createElement("div", { style: { width: "100%", backgroundColor: "#e0e0e0", borderRadius: "4px" } }, /* @__PURE__ */ React2.createElement("div", { style: { width: `${annotatedImages / srcs.length * 100}%`, backgroundColor: "#4caf50", height: "8px", borderRadius: "4px" } })))), /* @__PURE__ */ React2.createElement(
+  ), /* @__PURE__ */ React2.createElement("div", { style: { flex: 1, marginLeft: "1rem", marginRight: "1rem" } }, /* @__PURE__ */ React2.createElement("div", { style: { width: "100%", backgroundColor: "#e0e0e0", borderRadius: "4px" } }, /* @__PURE__ */ React2.createElement("div", { style: { width: `${annotations.filter((a) => a.elements.length > 0).length / srcs.length * 100}%`, backgroundColor: "#4caf50", height: "8px", borderRadius: "4px" } })))), /* @__PURE__ */ React2.createElement(
     DrawingArea,
     {
       imageSrc: currentSrc,
