@@ -34,7 +34,7 @@ def to_src(input_data: Union[str, Any]) -> str:
                 # If successful, assume it's base64 and add data URI prefix
                 # Default to PNG if we can't determine the format
                 return f"data:image/png;base64,{input_data}"
-            except:
+            except Exception:
                 # If it fails, treat it as a file path
                 pass
         

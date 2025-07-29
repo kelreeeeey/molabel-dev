@@ -209,13 +209,32 @@ const DrawingArea = ({
   const containerRef = useRef(null);
   const hasDragged = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(null);
 
   React.useEffect(() => {
+    const isDataURI = imageSrc?.startsWith('data:image/');
     setIsLoading(true);
+    setImageError(null);
+    
+    // Handle base64 data URIs differently - they're immediately available
+    if (isDataURI) {
+      // Use a minimal timeout to ensure React has finished rendering
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 10);
+      return () => clearTimeout(timer);
+    }
+    // For HTTP URLs, rely on the onLoad event (existing behavior)
   }, [imageSrc]);
 
   function handleImageLoad() {
     setIsLoading(false);
+    setImageError(null);
+  }
+
+  function handleImageError(e) {
+    setIsLoading(false);
+    setImageError('Failed to load image');
   }
 
   function handleMouseDown(e) {
@@ -291,8 +310,14 @@ const DrawingArea = ({
         onMouseUp={handleMouseUp}
       >
         {isLoading && <div style={{ padding: '2rem', color: '#888' }}>Loading image...</div>}
-        <img src={imageSrc} onLoad={handleImageLoad} style={{ display: isLoading ? "none" : "block" }} />
-        {!isLoading && (
+        {imageError && <div style={{ padding: '2rem', color: '#ff4444' }}>Error: {imageError}</div>}
+        <img 
+          src={imageSrc} 
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          style={{ display: (isLoading || imageError) ? "none" : "block" }} 
+        />
+        {!isLoading && !imageError && (
           <svg
             style={{
               position: "absolute",
