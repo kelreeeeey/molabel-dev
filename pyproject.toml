@@ -16,6 +16,10 @@ dev = [
     "black>=22.0",
     "ruff>=0.0.270",
 ]
+images = [
+    "Pillow>=9.0.0",
+    "numpy>=1.20.0",
+]
 
 [build-system]
 requires = ["hatchling"]
