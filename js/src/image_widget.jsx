@@ -345,7 +345,7 @@ const DrawingArea = ({
   );
 };
 
-const Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClass, onDeleteSelected, selectedShape }) => {
+const Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClass, onDeleteSelected, selectedShape, onUndo, canUndo }) => {
   return (
     <div className="imagewidget-toolbar">
       {classes && classes.length > 0 && (
@@ -369,6 +369,9 @@ const Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClas
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
         </button>
         <div style={{ flex: 1 }} />
+        <button onClick={onUndo} disabled={!canUndo} title="Undo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><polyline points="19 12 5 12"></polyline></svg>
+        </button>
         <button onClick={onClear} title="Clear All">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
         </button>
@@ -481,6 +484,16 @@ function ImageAnnotationWidget() {
     setSelectedShape(null);
   }
 
+  function handleUndo() {
+    if (currentAnnotationData.elements.length === 0) return;
+    const newElements = currentAnnotationData.elements.slice(0, -1);
+    const removedAnnotation = currentAnnotationData.elements[currentAnnotationData.elements.length - 1];
+    handleAnnotationChange(newElements);
+    if (selectedShape === removedAnnotation.id) {
+      setSelectedShape(null);
+    }
+  }
+
   const drawingColor = Object.keys(labelColorMap).length > 0
     ? labelColorMap[currentClass]
     : DEFAULT_COLORS[currentAnnotationData.elements.length % DEFAULT_COLORS.length];
@@ -496,6 +509,8 @@ function ImageAnnotationWidget() {
         setCurrentClass={setCurrentClass}
         onDeleteSelected={handleDeleteSelected}
         selectedShape={selectedShape}
+        onUndo={handleUndo}
+        canUndo={currentAnnotationData.elements.length > 0}
       />
       <DrawingArea
         imageSrc={currentSrc}
