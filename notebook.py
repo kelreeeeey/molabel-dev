@@ -141,10 +141,27 @@ def _(image, mo):
     image
 
     label_widget = mo.ui.anywidget(
-        ImageLabel(paths=["output_image.png"], classes=["foreground"], colors=["orange"])
+        ImageLabel(
+            paths=["output_image.png"], 
+            classes=["foreground"], 
+            colors=["orange"]
+        )
     )
     label_widget
     return (label_widget,)
+
+
+@app.cell
+def _(point_coords):
+    point_coords
+    return
+
+
+@app.cell
+def _(label_widget, set_state):
+    label_widget.observe(lambda _: set_state(label_widget.annotations), 
+                         names=["annotations"])
+    return
 
 
 @app.cell
@@ -197,12 +214,6 @@ def _(boxes, points):
         for _ in boxes
     ]
     return box_coords, point_coords
-
-
-@app.cell
-def _(box_coords, np):
-    np.array(box_coords)
-    return
 
 
 @app.cell

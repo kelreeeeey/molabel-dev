@@ -172,3 +172,5 @@ Desktop.ini
 
 # UV lock file
 uv.lock
+*.pth
+package-lock.json
