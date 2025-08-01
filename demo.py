@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.13"
+__generated_with = "0.14.9"
 app = marimo.App()
 
 
@@ -128,23 +128,31 @@ def _():
 
 
     Counter()
-    return
+    return (Path,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     from molabel import ImageLabel
 
     img_w = mo.ui.anywidget(
-        ImageLabel([f"https://picsum.photos/500/50{i}" for i in range(9)] , classes=["foo", "bar"])
+        ImageLabel(["vulture.png"], classes=["foo", "bar"])
     )
     img_w
     return (img_w,)
 
 
 @app.cell
+def _(Path):
+    Path().home()
+    return
+
+
+@app.cell
 def _(img_w):
-    img_w.annotations
+    from mohtml import img
+
+    img_w.annotations[0]
     return
 
 

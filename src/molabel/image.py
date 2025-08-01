@@ -129,3 +129,29 @@ class ImageLabel(anywidget.AnyWidget):
                 self.colors = dict(zip(self.classes, colors))
             else:
                 self.colors = colors
+    
+    def _normalize_points(self, annotation: dict) -> dict:
+        if "elements" not in annotation:
+            return annotation
+        
+        elements = []
+        for element in annotation["elements"]:
+            points = []
+            for point in element["points"]:
+                points.append({
+                    "x": int(point["x"] * element["imageDimensions"]["width"]), 
+                    "y": int(point["y"] * element["imageDimensions"]["height"])
+                })
+            new_element = {**element}
+            new_element["points"] = points
+            elements.append(new_element)
+        return {
+            **annotation, 
+            "elements": elements
+        }
+               
+    def get_normalized_annotations(self):
+        """
+        Get the coordinates of the annotations for a given image.
+        """
+        return [self._normalize_points(annotation) for annotation in self.annotations]
