@@ -141,11 +141,7 @@ def _(image, mo):
     image
 
     label_widget = mo.ui.anywidget(
-        ImageLabel(
-            paths=["output_image.png"], 
-            classes=["foreground"], 
-            colors=["orange"]
-        )
+        ImageLabel(paths=["output_image.png"], classes=["foreground"], colors=["orange"])
     )
     label_widget
     return (label_widget,)
@@ -154,13 +150,6 @@ def _(image, mo):
 @app.cell
 def _(point_coords):
     point_coords
-    return
-
-
-@app.cell
-def _(label_widget, set_state):
-    label_widget.observe(lambda _: set_state(label_widget.annotations), 
-                         names=["annotations"])
     return
 
 
@@ -210,7 +199,7 @@ def _(boxes, points):
             _["points"][0]["y"],
             _["points"][1]["x"],
             _["points"][1]["y"],
-        ] 
+        ]
         for _ in boxes
     ]
     return box_coords, point_coords
@@ -250,7 +239,7 @@ def _(box_coords, image, masks, point_coords):
 def _(Image, image, masks, np):
     rgba_image = np.dstack([np.array(image), masks[0] * 255])
 
-    masked_image = Image.fromarray(rgba_image.astype(np.uint8), mode='RGBA')
+    masked_image = Image.fromarray(rgba_image.astype(np.uint8), mode="RGBA")
     masked_image
     return
 
