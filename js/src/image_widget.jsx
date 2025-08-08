@@ -195,6 +195,123 @@ const Point = ({ annotation, isSelected, onSelect, onUpdate }) => {
   );
 };
 
+const Polygon = ({ annotation, isSelected, onSelect, onUpdate }) => {
+  const textRef = useRef(null);
+  const [textBBox, setTextBBox] = useState({ width: 0, height: 0 });
+  const color = annotation.color || "red";
+
+  React.useEffect(() => {
+    if (textRef.current) {
+      const bbox = textRef.current.getBBox();
+      setTextBBox({ width: bbox.width, height: bbox.height });
+    }
+  }, [annotation.label]);
+
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    onSelect(annotation.id);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialPoints = annotation.points;
+
+    const handleMouseMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const newPoints = initialPoints.map(point => ({
+        x: point.x + dx,
+        y: point.y + dy
+      }));
+      onUpdate({ ...annotation, points: newPoints });
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleVertexMouseDown = (e, vertexIndex) => {
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initialPoints = annotation.points;
+
+    const handleMouseMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      const newPoints = [...initialPoints];
+      newPoints[vertexIndex] = {
+        x: initialPoints[vertexIndex].x + dx,
+        y: initialPoints[vertexIndex].y + dy
+      };
+      onUpdate({ ...annotation, points: newPoints });
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const pathData = annotation.points.length > 0 
+    ? `M ${annotation.points.map(p => `${p.x},${p.y}`).join(' L ')} Z`
+    : '';
+
+  const labelPosition = annotation.points.length > 0 ? annotation.points[0] : { x: 0, y: 0 };
+
+  return (
+    <g style={{ userSelect: 'none' }}>
+      <g onMouseDown={handleMouseDown} style={{ cursor: "move" }}>
+        <path
+          d={pathData}
+          stroke={color}
+          strokeWidth="3"
+          fill="transparent"
+        />
+      </g>
+      {annotation.label && (
+        <g onMouseDown={(e) => { e.stopPropagation(); onSelect(annotation.id); }}>
+          <rect
+            x={labelPosition.x}
+            y={labelPosition.y - 18}
+            width={textBBox.width + 4}
+            height={textBBox.height}
+            fill={color}
+          />
+          <text
+            ref={textRef}
+            x={labelPosition.x + 2}
+            y={labelPosition.y - 4}
+            fill="white"
+            fontSize="14"
+            style={{ pointerEvents: "none" }}
+          >
+            {annotation.label}
+          </text>
+        </g>
+      )}
+      {isSelected && annotation.points.map((point, index) => (
+        <rect
+          key={index}
+          x={point.x - 4}
+          y={point.y - 4}
+          width="8"
+          height="8"
+          fill={color}
+          onMouseDown={(e) => handleVertexMouseDown(e, index)}
+          style={{ cursor: "crosshair" }}
+        />
+      ))}
+    </g>
+  );
+};
+
 const DrawingArea = ({
   imageSrc,
   annotations,
@@ -206,10 +323,13 @@ const DrawingArea = ({
   drawingColor,
 }) => {
   const [drawing, setDrawing] = useState(null);
+  const [polygonPoints, setPolygonPoints] = useState([]);
   const containerRef = useRef(null);
+  const imageRef = useRef(null);
   const hasDragged = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   React.useEffect(() => {
     const isDataURI = imageSrc?.startsWith('data:image/');
@@ -227,14 +347,55 @@ const DrawingArea = ({
     // For HTTP URLs, rely on the onLoad event (existing behavior)
   }, [imageSrc]);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (tool === "polygon" && polygonPoints.length >= 3) {
+        if (e.key === "Enter" || e.key === "Escape") {
+          finishPolygon();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [tool, polygonPoints, annotations, currentClass, imageDimensions]);
+
+  React.useEffect(() => {
+    // Clear polygon points when tool changes
+    if (tool !== "polygon") {
+      setPolygonPoints([]);
+    }
+  }, [tool]);
+
   function handleImageLoad() {
     setIsLoading(false);
     setImageError(null);
+    if (imageRef.current) {
+      setImageDimensions({
+        width: imageRef.current.naturalWidth,
+        height: imageRef.current.naturalHeight
+      });
+    }
   }
 
   function handleImageError(e) {
     setIsLoading(false);
     setImageError('Failed to load image');
+  }
+
+  function finishPolygon() {
+    if (polygonPoints.length >= 3) {
+      const newAnnotation = {
+        id: Date.now().toString(),
+        type: "polygon",
+        label: currentClass,
+        points: polygonPoints,
+        imageDimensions: { width: imageDimensions.width, height: imageDimensions.height }
+      };
+      onAnnotationChange([...annotations, newAnnotation]);
+      setSelectedShape(newAnnotation.id);
+    }
+    setPolygonPoints([]);
   }
 
   function handleMouseDown(e) {
@@ -245,17 +406,36 @@ const DrawingArea = ({
     if (tool === "box") {
       hasDragged.current = false;
       const { x, y } = getCoordinates(e);
-      setDrawing({ startX: x, startY: y, endX: x, endY: y });
+      const relCoords = absoluteToRelative(x, y);
+      setDrawing({ startX: relCoords.x, startY: relCoords.y, endX: relCoords.x, endY: relCoords.y });
     } else if (tool === "point") {
       const { x, y } = getCoordinates(e);
+      const relCoords = absoluteToRelative(x, y);
       const newAnnotation = {
         id: Date.now().toString(),
         type: "point",
         label: currentClass,
-        points: [{ x, y }],
+        points: [relCoords],
+        imageDimensions: { width: imageDimensions.width, height: imageDimensions.height }
       };
       onAnnotationChange([...annotations, newAnnotation]);
       setSelectedShape(newAnnotation.id);
+    } else if (tool === "polygon") {
+      const { x, y } = getCoordinates(e);
+      const relCoords = absoluteToRelative(x, y);
+      
+      // Check if this is a double-click on the first point to close the polygon
+      if (polygonPoints.length >= 3) {
+        const firstPoint = polygonPoints[0];
+        const absFirstPoint = relativeToAbsolute(firstPoint.x, firstPoint.y);
+        const distance = Math.sqrt(Math.pow(x - absFirstPoint.x, 2) + Math.pow(y - absFirstPoint.y, 2));
+        if (distance < 10) { // Close polygon if clicked near first point
+          finishPolygon();
+          return;
+        }
+      }
+      
+      setPolygonPoints([...polygonPoints, relCoords]);
     }
   }
 
@@ -263,7 +443,8 @@ const DrawingArea = ({
     if (!drawing) return;
     hasDragged.current = true;
     const { x, y } = getCoordinates(e);
-    setDrawing({ ...drawing, endX: x, endY: y });
+    const relCoords = absoluteToRelative(x, y);
+    setDrawing({ ...drawing, endX: relCoords.x, endY: relCoords.y });
   }
 
   function handleMouseUp(e) {
@@ -280,6 +461,7 @@ const DrawingArea = ({
         { x: Math.min(startX, endX), y: Math.min(startY, endY) },
         { x: Math.max(startX, endX), y: Math.max(startY, endY) },
       ],
+      imageDimensions: { width: imageDimensions.width, height: imageDimensions.height }
     };
     onAnnotationChange([...annotations, newAnnotation]);
     setSelectedShape(newAnnotation.id);
@@ -291,6 +473,64 @@ const DrawingArea = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     return { x, y };
+  }
+
+  function absoluteToRelative(absX, absY) {
+    if (!imageRef.current) return { x: 0, y: 0 };
+    const displayWidth = imageRef.current.offsetWidth;
+    const displayHeight = imageRef.current.offsetHeight;
+    return {
+      x: absX / displayWidth,
+      y: absY / displayHeight
+    };
+  }
+
+  function relativeToAbsolute(relX, relY) {
+    if (!imageRef.current) return { x: 0, y: 0 };
+    const displayWidth = imageRef.current.offsetWidth;
+    const displayHeight = imageRef.current.offsetHeight;
+    return {
+      x: relX * displayWidth,
+      y: relY * displayHeight
+    };
+  }
+
+  function convertAnnotationToRelative(annotation) {
+    if (annotation.coordinateType === 'relative') {
+      return annotation;
+    }
+    const points = annotation.points.map(p => absoluteToRelative(p.x, p.y));
+    return { ...annotation, points, coordinateType: 'relative' };
+  }
+
+  function convertAnnotationToAbsolute(annotation) {
+    if (annotation.coordinateType === 'absolute') {
+      return annotation;
+    }
+    const points = annotation.points.map(p => relativeToAbsolute(p.x, p.y));
+    return { ...annotation, points, coordinateType: 'absolute' };
+  }
+  
+  function normalizeAnnotation(annotation) {
+    let normalized = annotation;
+    
+    // Add coordinate type if missing
+    if (!annotation.coordinateType) {
+      const maxX = Math.max(...annotation.points.map(p => p.x));
+      const maxY = Math.max(...annotation.points.map(p => p.y));
+      if (maxX > 1 || maxY > 1) {
+        normalized = { ...normalized, coordinateType: 'absolute' };
+      } else {
+        normalized = { ...normalized, coordinateType: 'relative' };
+      }
+    }
+    
+    // Add image dimensions if missing
+    if (!normalized.imageDimensions && imageDimensions.width && imageDimensions.height) {
+      normalized = { ...normalized, imageDimensions: { width: imageDimensions.width, height: imageDimensions.height } };
+    }
+    
+    return normalized;
   }
 
   function handleUpdateAnnotation(updatedAnnotation) {
@@ -312,6 +552,7 @@ const DrawingArea = ({
         {isLoading && <div style={{ padding: '2rem', color: '#888' }}>Loading image...</div>}
         {imageError && <div style={{ padding: '2rem', color: '#ff4444' }}>Error: {imageError}</div>}
         <img 
+          ref={imageRef}
           src={imageSrc} 
           onLoad={handleImageLoad}
           onError={handleImageError}
@@ -328,14 +569,19 @@ const DrawingArea = ({
             }}
           >
             {annotations.map((anno) => {
+              const normalizedAnno = normalizeAnnotation(anno);
+              const absAnno = convertAnnotationToAbsolute(normalizedAnno);
               if (anno.type === "box") {
                 return (
                   <Box
                     key={anno.id}
-                    annotation={anno}
+                    annotation={absAnno}
                     isSelected={selectedShape === anno.id}
                     onSelect={setSelectedShape}
-                    onUpdate={handleUpdateAnnotation}
+                    onUpdate={(updated) => {
+                      const relativeUpdated = convertAnnotationToRelative(updated);
+                      handleUpdateAnnotation(relativeUpdated);
+                    }}
                   />
                 );
               }
@@ -343,26 +589,91 @@ const DrawingArea = ({
                 return (
                   <Point
                     key={anno.id}
-                    annotation={anno}
+                    annotation={absAnno}
                     isSelected={selectedShape === anno.id}
                     onSelect={setSelectedShape}
-                    onUpdate={handleUpdateAnnotation}
+                    onUpdate={(updated) => {
+                      const relativeUpdated = convertAnnotationToRelative(updated);
+                      handleUpdateAnnotation(relativeUpdated);
+                    }}
+                  />
+                );
+              }
+              if (anno.type === "polygon") {
+                return (
+                  <Polygon
+                    key={anno.id}
+                    annotation={absAnno}
+                    isSelected={selectedShape === anno.id}
+                    onSelect={setSelectedShape}
+                    onUpdate={(updated) => {
+                      const relativeUpdated = convertAnnotationToRelative(updated);
+                      handleUpdateAnnotation(relativeUpdated);
+                    }}
                   />
                 );
               }
               return null;
             })}
-            {drawing && tool === "box" && (
-              <rect
-                x={Math.min(drawing.startX, drawing.endX)}
-                y={Math.min(drawing.startY, drawing.endY)}
-                width={Math.abs(drawing.startX - drawing.endX)}
-                height={Math.abs(drawing.startY - drawing.endY)}
-                stroke={drawingColor}
-                fill="transparent"
-                strokeWidth="2"
-              />
-            )}
+            {drawing && tool === "box" && (() => {
+              const absStart = relativeToAbsolute(drawing.startX, drawing.startY);
+              const absEnd = relativeToAbsolute(drawing.endX, drawing.endY);
+              return (
+                <rect
+                  x={Math.min(absStart.x, absEnd.x)}
+                  y={Math.min(absStart.y, absEnd.y)}
+                  width={Math.abs(absStart.x - absEnd.x)}
+                  height={Math.abs(absStart.y - absEnd.y)}
+                  stroke={drawingColor}
+                  fill="transparent"
+                  strokeWidth="2"
+                />
+              );
+            })()}
+            {tool === "polygon" && polygonPoints.length > 0 && (() => {
+              const absPoints = polygonPoints.map(p => relativeToAbsolute(p.x, p.y));
+              if (absPoints.length === 1) {
+                return (
+                  <circle
+                    cx={absPoints[0].x}
+                    cy={absPoints[0].y}
+                    r="4"
+                    fill={drawingColor}
+                  />
+                );
+              }
+              const pathData = `M ${absPoints.map(p => `${p.x},${p.y}`).join(' L ')}`;
+              return (
+                <g>
+                  <path
+                    d={pathData}
+                    stroke={drawingColor}
+                    strokeWidth="2"
+                    fill="transparent"
+                  />
+                  {absPoints.map((point, index) => (
+                    <circle
+                      key={index}
+                      cx={point.x}
+                      cy={point.y}
+                      r="4"
+                      fill={drawingColor}
+                    />
+                  ))}
+                  {polygonPoints.length >= 3 && (
+                    <circle
+                      cx={absPoints[0].x}
+                      cy={absPoints[0].y}
+                      r="8"
+                      fill="transparent"
+                      stroke={drawingColor}
+                      strokeWidth="2"
+                      strokeDasharray="3,3"
+                    />
+                  )}
+                </g>
+              );
+            })()}
           </svg>
         )}
       </div>
@@ -392,6 +703,9 @@ const Toolbar = ({ tool, setTool, onClear, classes, currentClass, setCurrentClas
         </button>
         <button onClick={() => setTool("point")} disabled={tool === "point"} title="Draw Point">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+        </button>
+        <button onClick={() => setTool("polygon")} disabled={tool === "polygon"} title="Draw Polygon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5"></polygon></svg>
         </button>
         <div style={{ flex: 1 }} />
         <button onClick={onUndo} disabled={!canUndo} title="Undo">
