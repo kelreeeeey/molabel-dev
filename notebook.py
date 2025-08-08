@@ -141,10 +141,26 @@ def _(image, mo):
     image
 
     label_widget = mo.ui.anywidget(
-        ImageLabel(paths=["output_image.png"], classes=["foreground"], colors=["orange"])
+        ImageLabel(
+            paths=["output_image.png"], 
+            classes=["foreground"], 
+            colors=["orange"]
+        )
     )
     label_widget
     return (label_widget,)
+
+
+@app.cell
+def _(labels, mo, np, point_coords, predictor):
+    mo.stop(len(point_coords) == 0)
+
+    masks, scores, logits = predictor.predict(
+        point_coords=np.array(point_coords),
+        point_labels=labels,
+        multimask_output=False,
+    )
+    return (masks,)
 
 
 @app.cell
@@ -205,18 +221,6 @@ def _(boxes, points):
     return box_coords, point_coords
 
 
-@app.cell
-def _(labels, mo, np, point_coords, predictor):
-    mo.stop(len(point_coords) == 0)
-
-    masks, scores, logits = predictor.predict(
-        point_coords=np.array(point_coords),
-        point_labels=labels,
-        multimask_output=False,
-    )
-    return (masks,)
-
-
 @app.cell(column=2, hide_code=True)
 def _(mo):
     mo.md(r"""## Segment-Anything results""")
@@ -241,6 +245,11 @@ def _(Image, image, masks, np):
 
     masked_image = Image.fromarray(rgba_image.astype(np.uint8), mode="RGBA")
     masked_image
+    return
+
+
+@app.cell(column=3)
+def _():
     return
 
 
